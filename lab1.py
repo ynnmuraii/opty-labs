@@ -2,16 +2,20 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Целевая функция (вариант 1)
-# f(x) = (x-3)^2 + 4, x in [0,10]
+""" Целевая функция (вариант 1)
+f(x) = (x-3)^2 + 4, x in [0,10] 
+"""
 
 def f(x):
     return (x - 3.0)**2 + 4.0
 
+
 # Аналитическое решение
 x_analytic = 3.0
 f_analytic = f(x_analytic)
-print("АНАЛИТИЧЕСКИ: минимум в x = {:.6f}, f = {:.6f}\n".format(x_analytic, f_analytic))
+print("АНАЛИТИЧЕСКИ: минимум в x = {:.6f}, f = {:.6f}\n".format(
+    x_analytic, f_analytic))
+
 
 def dichotomy(a, b, eps=1e-5, delta=1e-6):
     left, right = float(a), float(b)
@@ -21,7 +25,8 @@ def dichotomy(a, b, eps=1e-5, delta=1e-6):
         mid = 0.5 * (left + right)
         x1 = mid - delta
         x2 = mid + delta
-        f1 = f(x1); f2 = f(x2)
+        f1 = f(x1)
+        f2 = f(x2)
         count += 2
         if f1 < f2:
             right = x2
@@ -34,14 +39,16 @@ def dichotomy(a, b, eps=1e-5, delta=1e-6):
     return {"x_min": x_min, "f_min": f(x_min), "count": count,
             "left": left, "right": right, "error": right - left}
 
+
 def golden_section(a, b, eps=1e-5):
     phi = (1.0 + math.sqrt(5.0)) / 2.0
-    resphi = 2.0 - phi  # ≈0.381966...
+    resphi = 2.0 - phi
     left, right = float(a), float(b)
-    # начальные две точки и их значения
+ 
     x1 = left + resphi * (right - left)
     x2 = right - resphi * (right - left)
-    f1 = f(x1); f2 = f(x2)
+    f1 = f(x1)
+    f2 = f(x2)
     count = 2
     while (right - left) > eps:
         if f1 < f2:
@@ -65,49 +72,43 @@ def golden_section(a, b, eps=1e-5):
     return {"x_min": x_min, "f_min": f(x_min), "count": count,
             "left": left, "right": right, "error": right - left}
 
-# N_measurements — целевое число вычислений f 
-def fibonacci_method(a, b, N_measurements, eps=1e-5):
-    if N_measurements < 2:
-        raise ValueError("N_measurements must be >= 2")
 
-    # Построим последовательность Фибоначчи с индексами, чтобы иметь F[k] для нужных k
-    F = [0, 1, 1]  # F[1]=1, F[2]=1
-    while len(F) <= N_measurements + 1:
+def fibonacci_method(a, b, N, eps=1e-5):
+    if N < 2:
+        raise ValueError("N must be >= 2")
+
+    F = [1, 1]
+    for i in range(2, N + 1):
         F.append(F[-1] + F[-2])
 
     left, right = float(a), float(b)
-    k = N_measurements
-    # защищаем индексы на случай маленьких k
-    x1 = left + (F[k-2] / F[k]) * (right - left)
-    x2 = left + (F[k-1] / F[k]) * (right - left)
-    f1 = f(x1); f2 = f(x2)
+    r = N
+
+    x1 = left + (F[r-2] / F[r]) * (right - left)
+    x2 = left + (F[r-1] / F[r]) * (right - left)
+    f1 = f(x1)
+    f2 = f(x2)
     count = 2
 
-    # Проводим шаги, уменьшая k
-    for i in range(k - 2, 0, -1):
-        if f1 < f2:
+    while r > 2 and (right - left) > eps:
+        if f1 <= f2:
             right = x2
-            x2 = x1
-            f2 = f1
-            # новый x1
-            if i-2 >= 0:
-                x1 = left + (F[i-2] / F[i]) * (right - left)
-            else:
-                x1 = left  # граничный случай
+            x2, f2 = x1, f1
+            r -= 1
+            x1 = left + (F[r-2] / F[r]) * (right - left)
             f1 = f(x1)
+            count += 1
         else:
             left = x1
-            x1 = x2
-            f1 = f2
-            x2 = left + (F[i-1] / F[i]) * (right - left)
+            x1, f1 = x2, f2
+            r -= 1
+            x2 = left + (F[r-1] / F[r]) * (right - left)
             f2 = f(x2)
-        count += 1
-        if (right - left) <= eps:
-            break
+            count += 1
 
     x_min = 0.5 * (left + right)
-    return {"x_min": x_min, "f_min": f(x_min), "count": count,
-            "left": left, "right": right, "error": right - left}
+    return {"x_min": x_min, "f_min": f(x_min),
+            "count": count, "left": left, "right": right, "error": right - left}
 
 
 if __name__ == "__main__":
@@ -115,8 +116,8 @@ if __name__ == "__main__":
     eps = 1e-5
 
     dich = dichotomy(a, b, eps=eps, delta=1e-6)
-    gold = golden_section(a, b, eps=eps)
-    fib = fibonacci_method(a, b, N_measurements=gold["count"], eps=eps)
+    gold = golden_section(0, 10, eps=1e-5)
+    fib = fibonacci_method(0, 10, N=gold["count"] + 1, eps=1e-5)
 
     print("МЕТОД ДИХОТОМИИ:")
     print(f"x ≈ {dich['x_min']:.8f}, f(x) ≈ {dich['f_min']:.8f}")
@@ -132,15 +133,17 @@ if __name__ == "__main__":
 
     X = np.linspace(a, b, 500)
     Y = [f(x) for x in X]
-    plt.figure(figsize=(9,5))
+    plt.figure(figsize=(9, 5))
     plt.plot(X, Y, label="f(x) = (x-3)^2 + 4", linewidth=1.2)
     plt.scatter([dich['x_min']], [dich['f_min']], s=60, label="Дихотомия")
-    plt.scatter([gold['x_min']], [gold['f_min']], s=60, label="Золотое сечение")
+    plt.scatter([gold['x_min']], [gold['f_min']],
+                s=60, label="Золотое сечение")
     plt.scatter([fib['x_min']], [fib['f_min']], s=60, label="Фибоначчи")
-    plt.scatter([x_analytic], [f_analytic], color='red', s=80, label="Аналитический минимум (x=3)")
-    plt.xlabel("x"); 
+    plt.scatter([x_analytic], [f_analytic], color='red',
+                s=80, label="Аналитический минимум (x=3)")
+    plt.xlabel("x")
     plt.ylabel("f(x)")
     plt.title("Сравнение методов на f(x)=(x-3)^2+4")
-    plt.grid(True); 
-    plt.legend(); 
+    plt.grid(True)
+    plt.legend()
     plt.show()
